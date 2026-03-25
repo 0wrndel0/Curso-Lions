@@ -1,6 +1,8 @@
 let a = [1, 2, 3, 4, 5,];
 let b = [];
-for(let i = 0; i< a.length; i++){
-    b[i] = a[a.length -1 -i] 
+let j = 0; 
+for (let i = a.length; i > 0; i--){
+    b[j] = a[i - 1] 
+    j++
 }
 console.log (b)
