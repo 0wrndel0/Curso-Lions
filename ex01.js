@@ -1,213 +1,250 @@
-const prompt = require("prompt-sync")();
+const readline = require("readline");
 
-// ================== DADOS ==================
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+// ARRAYS
 let carros = [];
 let clientes = [];
 let alugueis = [];
 
+// IDS
 let proximoIdCarro = 1;
 let proximoIdCliente = 1;
 let proximoIdAluguel = 1;
 
-// ================== CARROS ==================
-function cadastrarCarro() {
-    let modelo = prompt("Modelo: ");
-    let placa = prompt("Placa: ");
-    let ano = Number(prompt("Ano: "));
-    let precoPorDia = Number(prompt("Preço por dia: "));
+// ================= MENU =================
 
-    carros.push({
-        id: proximoIdCarro++,
-        modelo,
-        placa,
-        ano,
-        precoPorDia,
-        disponivel: true
+function mostrarMenu() {
+    console.log("\n========= TURBOCAR =========");
+    console.log("1 - Cadastrar Carro");
+    console.log("2 - Listar Carros");
+    console.log("3 - Cadastrar Cliente");
+    console.log("4 - Listar Clientes");
+    console.log("5 - Realizar Aluguel");
+    console.log("6 - Devolver Carro");
+    console.log("7 - Alugueis Ativos");
+    console.log("8 - Alugueis Finalizados");
+    console.log("0 - Sair");
+
+    rl.question("Escolha: ", (opcao) => {
+
+        if (opcao === "1") cadastrarCarro();
+        else if (opcao === "2") listarCarros();
+        else if (opcao === "3") cadastrarCliente();
+        else if (opcao === "4") listarClientes();
+        else if (opcao === "5") realizarAluguel();
+        else if (opcao === "6") devolverCarro();
+        else if (opcao === "7") listarAtivos();
+        else if (opcao === "8") listarFinalizados();
+        else if (opcao === "0") rl.close();
+
     });
+}
 
-    console.log("Carro cadastrado!");
+// ================= CARROS =================
+
+function cadastrarCarro() {
+    console.log("Cadastrar carro");
+
+    rl.question("Modelo: ", (modelo) => {
+        rl.question("Placa: ", (placa) => {
+            rl.question("Ano: ", (ano) => {
+                rl.question("Preço por dia: ", (preco) => {
+
+                    ano = Number(ano);
+                    preco = Number(preco);
+
+                    let carro = {
+                        id: proximoIdCarro++,
+                        modelo,
+                        placa,
+                        ano,
+                        precoPorDia: preco,
+                        disponivel: true
+                    };
+
+                    carros.push(carro);
+
+                    console.log("Carro cadastrado!");
+                    mostrarMenu();
+                });
+            });
+        });
+    });
 }
 
 function listarCarros() {
-    console.log(carros);
-}
+    console.log("\n=== CARROS ===");
 
-function buscarCarroPorId() {
-    let id = Number(prompt("ID do carro: "));
-    let carro = carros.find(c => c.id === id);
-    console.log(carro || "Carro não encontrado");
-}
-
-function atualizarCarro() {
-    let id = Number(prompt("ID do carro: "));
-    let carro = carros.find(c => c.id === id);
-
-    if (carro) {
-        carro.modelo = prompt("Novo modelo: ");
-        carro.placa = prompt("Nova placa: ");
-        carro.ano = Number(prompt("Novo ano: "));
-        carro.precoPorDia = Number(prompt("Novo preço: "));
-        console.log("Atualizado!");
-    } else {
-        console.log("Carro não encontrado");
-    }
-}
-
-function removerCarro() {
-    let id = Number(prompt("ID do carro: "));
-    carros = carros.filter(c => c.id !== id);
-    console.log("Removido!");
-}
-
-// ================== CLIENTES ==================
-function cadastrarCliente() {
-    let nome = prompt("Nome: ");
-    let cpf = prompt("CPF: ");
-    let telefone = prompt("Telefone: ");
-
-    clientes.push({
-        id: proximoIdCliente++,
-        nome,
-        cpf,
-        telefone
-    });
-
-    console.log("Cliente cadastrado!");
-}
-
-function listarClientes() {
-    console.log(clientes);
-}
-
-function buscarClientePorId() {
-    let id = Number(prompt("ID do cliente: "));
-    let cliente = clientes.find(c => c.id === id);
-    console.log(cliente || "Cliente não encontrado");
-}
-
-function atualizarCliente() {
-    let id = Number(prompt("ID do cliente: "));
-    let cliente = clientes.find(c => c.id === id);
-
-    if (cliente) {
-        cliente.nome = prompt("Novo nome: ");
-        cliente.cpf = prompt("Novo CPF: ");
-        cliente.telefone = prompt("Novo telefone: ");
-        console.log("Atualizado!");
-    } else {
-        console.log("Cliente não encontrado");
-    }
-}
-
-function removerCliente() {
-    let id = Number(prompt("ID do cliente: "));
-    clientes = clientes.filter(c => c.id !== id);
-    console.log("Removido!");
-}
-
-// ================== ALUGUEL ==================
-function realizarAluguel() {
-    let idCliente = Number(prompt("ID Cliente: "));
-    let idCarro = Number(prompt("ID Carro: "));
-    let dias = Number(prompt("Dias: "));
-
-    let cliente = clientes.find(c => c.id === idCliente);
-    let carro = carros.find(c => c.id === idCarro);
-
-    if (!cliente || !carro || !carro.disponivel) {
-        console.log("Erro no aluguel!");
-        return;
-    }
-
-    let total = dias * carro.precoPorDia;
-
-    alugueis.push({
-        id: proximoIdAluguel++,
-        idCliente,
-        idCarro,
-        dias,
-        total,
-        status: "ativo"
-    });
-
-    carro.disponivel = false;
-
-    console.log("Aluguel realizado!");
-}
-
-function devolverCarro() {
-    let id = Number(prompt("ID do aluguel: "));
-    let aluguel = alugueis.find(a => a.id === id && a.status === "ativo");
-
-    if (!aluguel) {
-        console.log("Aluguel não encontrado!");
-        return;
-    }
-
-    aluguel.status = "finalizado";
-
-    let carro = carros.find(c => c.id === aluguel.idCarro);
-    carro.disponivel = true;
-
-    console.log("Carro devolvido!");
-}
-
-function listarAlugueis() {
-    console.log(alugueis);
-}
-
-function listarAlugueisAtivos() {
-    console.log(alugueis.filter(a => a.status === "ativo"));
-}
-
-function listarAlugueisFinalizados() {
-    console.log(alugueis.filter(a => a.status === "finalizado"));
-}
-
-// ================== MENU ==================
-function mostrarMenu() {
-    console.log(`
-==== TURBOCAR ====
-1. Cadastrar carro
-2. Listar carros
-3. Buscar carro
-4. Atualizar carro
-5. Remover carro
-6. Cadastrar cliente
-7. Listar clientes
-8. Buscar cliente
-9. Atualizar cliente
-10. Remover cliente
-11. Realizar aluguel
-12. Devolver carro
-13. Alugueis ativos
-14. Histórico
-0. Sair
-`);
-
-    let opcao = Number(prompt("Escolha: "));
-
-    switch (opcao) {
-        case 1: cadastrarCarro(); break;
-        case 2: listarCarros(); break;
-        case 3: buscarCarroPorId(); break;
-        case 4: atualizarCarro(); break;
-        case 5: removerCarro(); break;
-        case 6: cadastrarCliente(); break;
-        case 7: listarClientes(); break;
-        case 8: buscarClientePorId(); break;
-        case 9: atualizarCliente(); break;
-        case 10: removerCliente(); break;
-        case 11: realizarAluguel(); break;
-        case 12: devolverCarro(); break;
-        case 13: listarAlugueisAtivos(); break;
-        case 14: listarAlugueisFinalizados(); break;
-        case 0: return;
-        default: console.log("Opção inválida");
+    for (let i = 0; i < carros.length; i++) {
+        console.log(carros[i]);
     }
 
     mostrarMenu();
 }
 
-// ================== START ==================
+// ================= CLIENTES =================
+
+function cadastrarCliente() {
+    console.log("Cadastrar cliente");
+
+    rl.question("Nome: ", (nome) => {
+        rl.question("CPF: ", (cpf) => {
+            rl.question("Telefone: ", (telefone) => {
+
+                let cliente = {
+                    id: proximoIdCliente++,
+                    nome,
+                    cpf,
+                    telefone
+                };
+
+                clientes.push(cliente);
+
+                console.log("Cliente cadastrado!");
+                mostrarMenu();
+            });
+        });
+    });
+}
+
+function listarClientes() {
+    console.log("\n=== CLIENTES ===");
+
+    for (let i = 0; i < clientes.length; i++) {
+        console.log(clientes[i]);
+    }
+
+    mostrarMenu();
+}
+
+// ================= ALUGUEL =================
+
+function realizarAluguel() {
+    console.log("Realizar aluguel");
+
+    rl.question("ID Cliente: ", (idCliente) => {
+        rl.question("ID Carro: ", (idCarro) => {
+            rl.question("Dias: ", (dias) => {
+
+                idCliente = Number(idCliente);
+                idCarro = Number(idCarro);
+                dias = Number(dias);
+
+                let cliente = buscarCliente(idCliente);
+                let carro = buscarCarro(idCarro);
+
+                if (!cliente) {
+                    console.log("Cliente não existe");
+                    mostrarMenu();
+                    return;
+                }
+
+                if (!carro) {
+                    console.log("Carro não existe");
+                    mostrarMenu();
+                    return;
+                }
+
+                if (!carro.disponivel) {
+                    console.log("Carro indisponível");
+                    mostrarMenu();
+                    return;
+                }
+
+                let total = dias * carro.precoPorDia;
+
+                let aluguel = {
+                    id: proximoIdAluguel++,
+                    idCliente,
+                    idCarro,
+                    dias,
+                    total,
+                    status: "ativo"
+                };
+
+                alugueis.push(aluguel);
+                carro.disponivel = false;
+
+                console.log("Aluguel feito! Total: " + total);
+                mostrarMenu();
+            });
+        });
+    });
+}
+
+function devolverCarro() {
+    console.log("Devolver carro");
+
+    rl.question("ID aluguel: ", (id) => {
+        id = Number(id);
+
+        let aluguel = null;
+
+        for (let i = 0; i < alugueis.length; i++) {
+            if (alugueis[i].id === id && alugueis[i].status === "ativo") {
+                aluguel = alugueis[i];
+            }
+        }
+
+        if (!aluguel) {
+            console.log("Aluguel não encontrado");
+            mostrarMenu();
+            return;
+        }
+
+        aluguel.status = "finalizado";
+
+        let carro = buscarCarro(aluguel.idCarro);
+        if (carro) carro.disponivel = true;
+
+        console.log("Carro devolvido!");
+        mostrarMenu();
+    });
+}
+
+function listarAtivos() {
+    console.log("\n=== ATIVOS ===");
+
+    for (let i = 0; i < alugueis.length; i++) {
+        if (alugueis[i].status === "ativo") {
+            console.log(alugueis[i]);
+        }
+    }
+
+    mostrarMenu();
+}
+
+function listarFinalizados() {
+    console.log("\n=== FINALIZADOS ===");
+
+    for (let i = 0; i < alugueis.length; i++) {
+        if (alugueis[i].status === "finalizado") {
+            console.log(alugueis[i]);
+        }
+    }
+
+    mostrarMenu();
+}
+
+// ================= BUSCAS =================
+
+function buscarCarro(id) {
+    for (let i = 0; i < carros.length; i++) {
+        if (carros[i].id === id) return carros[i];
+    }
+    return null;
+}
+
+function buscarCliente(id) {
+    for (let i = 0; i < clientes.length; i++) {
+        if (clientes[i].id === id) return clientes[i];
+    }
+    return null;
+}
+
+// INICIAR
 mostrarMenu();
