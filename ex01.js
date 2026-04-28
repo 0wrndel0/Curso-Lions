@@ -1,102 +1,92 @@
-import carService from "../services/carService.js";
-const createCar = async (req, res, next) => {
+import bookService from "../services/bookService.js";
+
+// 1. Criar livro
+const createBook = async (req, res, next) => {
   try {
-    const car = await carService.createCar(req.body);
-    res.status(201).json(car);
+    const book = await bookService.createBook(req.body);
+    res.status(201).json(book);
   } catch (error) {
     next(error);
   }
 };
-const getAllCars = async (req, res, next) => {
+
+// 2. Listar livros
+const getAllBooks = async (req, res, next) => {
   try {
-    const cars = await carService.getAllCars();
-    res.json(cars);
+    const books = await bookService.getAllBooks();
+    res.json(books);
   } catch (error) {
     next(error);
   }
 };
-const getCarById = async (req, res, next) => {
+
+// 3. Buscar por ID
+const getBookById = async (req, res, next) => {
   try {
-    const car = await carService.getCarById(req.params.id);
-    res.json(car);
+    const book = await bookService.getBookById(req.params.id);
+    res.json(book);
   } catch (error) {
     next(error);
   }
 };
-const updateCar = async (req, res, next) => {
+
+// 4. Buscar por título (parcial)
+const getBooksByTitle = async (req, res, next) => {
   try {
-    const car = await carService.updateCar(req.params.id, req.body);
-    res.json(car);
+    const books = await bookService.getBooksByTitle(req.params.title);
+    res.json(books);
   } catch (error) {
     next(error);
   }
 };
-const deleteCar = async (req, res, next) => {
+
+// 5. Buscar por categoria
+const getBooksByCategory = async (req, res, next) => {
   try {
-    const car = await carService.deleteCar(req.params.id);
-    res.json({ message: "Carro deletado com sucesso", car });
+    const books = await bookService.getBooksByCategory(req.params.category);
+    res.json(books);
   } catch (error) {
     next(error);
   }
 };
-const getCarsByBrand = async (req, res, next) => {
+
+// 6. Listar disponíveis
+const getAvailableBooks = async (req, res, next) => {
   try {
-    const cars = await carService.getCarsByBrand(req.params.brand);
-    res.json(cars);
+    const books = await bookService.getAvailableBooks();
+    res.json(books);
   } catch (error) {
     next(error);
   }
 };
-const getAvailableCars = async (req, res, next) => {
+
+// 7. Atualizar livro
+const updateBook = async (req, res, next) => {
   try {
-    const cars = await carService.getAvailableCars();
-    res.json(cars);
+    const book = await bookService.updateBook(req.params.id, req.body);
+    res.json(book);
   } catch (error) {
     next(error);
   }
 };
-const updateAvailability = async (req, res, next) => {
+
+// 8. Desativar livro
+const deactivateBook = async (req, res, next) => {
   try {
-    const car = await carService.updateAvailability(req.params.id, req.body.disponivel);
-    res.json(car);
+    const book = await bookService.deactivateBook(req.params.id);
+    res.json({ message: "Livro desativado com sucesso", book });
   } catch (error) {
     next(error);
   }
 };
-const getCarsByPriceRange = async (req, res, next) => {
-  try {
-    const cars = await carService.getCarsByPriceRange(req.params.min, req.params.max);
-    res.json(cars);
-  } catch (error) {
-    next(error);
-  }
-};
-const getCarByPlate = async (req, res, next) => {
-  try {
-    const car = await carService.getCarByPlate(req.params.plate);
-    res.json(car);
-  } catch (error) {
-    next(error);
-  }
-};
-const countAvailableCars = async (req, res, next) => {
-  try {
-    const totalDisponiveis = await carService.countAvailableCars();
-    res.json({ totalDisponiveis });
-  } catch (error) {
-    next(error);
-  }
-};
+
 export default {
-  createCar,
-  getAllCars,
-  getCarById,
-  updateCar,
-  deleteCar,
-  getCarsByBrand,
-  getAvailableCars,
-  updateAvailability,
-  getCarsByPriceRange,
-  getCarByPlate,
-  countAvailableCars,
+  createBook,
+  getAllBooks,
+  getBookById,
+  getBooksByTitle,
+  getBooksByCategory,
+  getAvailableBooks,
+  updateBook,
+  deactivateBook,
 };
