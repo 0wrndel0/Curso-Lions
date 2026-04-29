@@ -2,9 +2,13 @@ import User from "../models/User.js";
 import Loan from "../models/Loan.js";
 
 // Criar usuário
-const createUser = async ({ nome, email, telefone }) => {
-  if (!nome || !email) {
-    throw new Error("Nome e email são obrigatórios");
+const createUser = async ({ nome, email, telefone, idade }) => {
+  if (!nome || !email || idade === undefined) {
+    throw new Error("Nome, email e idade são obrigatórios");
+  }
+
+  if (idade < 0) {
+    throw new Error("Idade inválida");
   }
 
   const exists = await User.findOne({ email });
@@ -16,6 +20,7 @@ const createUser = async ({ nome, email, telefone }) => {
     nome,
     email,
     telefone,
+    idade,
     ativo: true,
   });
 };
@@ -33,7 +38,7 @@ const getUserById = async (id) => {
 };
 
 // Atualizar usuário
-const updateUser = async (id, { nome, email, telefone }) => {
+const updateUser = async (id, { nome, email, telefone, idade }) => {
   const user = await User.findById(id);
   if (!user) throw new Error("Usuário não encontrado");
 
@@ -44,9 +49,13 @@ const updateUser = async (id, { nome, email, telefone }) => {
     }
   }
 
+  if (idade !== undefined && idade < 0) {
+    throw new Error("Idade inválida");
+  }
+
   return User.findByIdAndUpdate(
     id,
-    { nome, email, telefone },
+    { nome, email, telefone, idade },
     { new: true, runValidators: true }
   );
 };
