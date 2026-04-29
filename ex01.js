@@ -1,7 +1,7 @@
 import User from "../models/User.js";
 import Loan from "../models/Loan.js";
 
-// Criar usuário
+// 1. Criar usuário
 const createUser = async ({ nome, email, telefone, idade }) => {
   if (!nome || !email || idade === undefined) {
     throw new Error("Nome, email e idade são obrigatórios");
@@ -25,19 +25,19 @@ const createUser = async ({ nome, email, telefone, idade }) => {
   });
 };
 
-// Listar usuários
+// 2. Listar usuários
 const getAllUsers = async () => {
   return User.find();
 };
 
-// Buscar por ID
+// 3. Buscar por ID
 const getUserById = async (id) => {
   const user = await User.findById(id);
   if (!user) throw new Error("Usuário não encontrado");
   return user;
 };
 
-// Atualizar usuário
+// 4. Atualizar usuário
 const updateUser = async (id, { nome, email, telefone, idade }) => {
   const user = await User.findById(id);
   if (!user) throw new Error("Usuário não encontrado");
@@ -60,7 +60,7 @@ const updateUser = async (id, { nome, email, telefone, idade }) => {
   );
 };
 
-// Desativar usuário
+// 5. Desativar usuário
 const deactivateUser = async (id) => {
   const user = await User.findById(id);
   if (!user) throw new Error("Usuário não encontrado");
