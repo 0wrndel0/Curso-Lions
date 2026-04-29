@@ -1,136 +1,72 @@
 import User from "../models/User.js";
-import Sale from "../models/Sale.js";
+import Loan from "../models/Loan.js";
 
-const createUser = async (data) => {
-  const { nome, email, telefone, senha, idade } = data;
-
-  if (!nome || !email || !telefone || !senha || idade === undefined) {
-    const error = new Error("Nome, email, telefone, senha e idade são obrigatórios");
-    error.statusCode = 400;
-    throw error;
+// Criar usuário
+const createUser = async ({ nome, email, telefone }) => {
+  if (!nome || !email) {
+    throw new Error("Nome e email são obrigatórios");
   }
 
-  const userExists = await User.findOne({ email });
-
-  if (userExists) {
-    const error = new Error("Já existe um usuário com esse email");
-    error.statusCode = 400;
-    throw error;
+  const exists = await User.findOne({ email });
+  if (exists) {
+    throw new Error("Email já cadastrado");
   }
 
-  return User.create({ nome, email, telefone, senha, idade });
+  return User.create({
+    nome,
+    email,
+    telefone,
+    ativo: true,
+  });
 };
 
+// Listar usuários
 const getAllUsers = async () => {
   return User.find();
 };
 
+// Buscar por ID
 const getUserById = async (id) => {
   const user = await User.findById(id);
-
-  if (!user) {
-    const error = new Error("Usuário não encontrado");
-    error.statusCode = 404;
-    throw error;
-  }
-
+  if (!user) throw new Error("Usuário não encontrado");
   return user;
 };
 
-const updateUser = async (id, data) => {
-  const user = await User.findByIdAndUpdate(id, data, {
-    new: true,
-    runValidators: true,
-  });
+// Atualizar usuário
+const updateUser = async (id, { nome, email, telefone }) => {
+  const user = await User.findById(id);
+  if (!user) throw new Error("Usuário não encontrado");
 
-  if (!user) {
-    const error = new Error("Usuário não encontrado");
-    error.statusCode = 404;
-    throw error;
+  if (email) {
+    const exists = await User.findOne({ email });
+    if (exists && exists._id.toString() !== id) {
+      throw new Error("Email já está em uso");
+    }
   }
 
-  return user;
-};
-
-const deleteUser = async (id) => {
-  const salesCount = await Sale.countDocuments({ userId: id });
-
-  if (salesCount > 0) {
-    const error = new Error("Não é possível deletar um usuário que possui vendas cadastradas");
-    error.statusCode = 400;
-    throw error;
-  }
-
-  const user = await User.findByIdAndDelete(id);
-
-  if (!user) {
-    const error = new Error("Usuário não encontrado");
-    error.statusCode = 404;
-    throw error;
-  }
-
-  return user;
-};
-
-const getUserByEmail = async (email) => {
-  const user = await User.findOne({ email });
-
-  if (!user) {
-    const error = new Error("Usuário não encontrado");
-    error.statusCode = 404;
-    throw error;
-  }
-
-  return user;
-};
-
-const countUsers = async () => {
-  return User.countDocuments();
-};
-
-const updateUserName = async (id, nome) => {
-  if (!nome) {
-    const error = new Error("O campo nome é obrigatório");
-    error.statusCode = 400;
-    throw error;
-  }
-
-  const user = await User.findByIdAndUpdate(
+  return User.findByIdAndUpdate(
     id,
-    { nome },
+    { nome, email, telefone },
     { new: true, runValidators: true }
   );
-
-  if (!user) {
-    const error = new Error("Usuário não encontrado");
-    error.statusCode = 404;
-    throw error;
-  }
-
-  return user;
 };
 
-const emailExists = async (email) => {
-  const user = await User.findOne({ email });
-  return Boolean(user);
-};
+// Desativar usuário
+const deactivateUser = async (id) => {
+  const user = await User.findById(id);
+  if (!user) throw new Error("Usuário não encontrado");
 
-const searchUsersByName = async (name) => {
-  return User.find({
-    nome: { $regex: name, $options: "i" },
+  const activeLoan = await Loan.findOne({
+    userId: id,
+    status: "ativo",
   });
-};
 
-const deleteAllUsers = async () => {
-  const salesCount = await Sale.countDocuments();
-
-  if (salesCount > 0) {
-    const error = new Error("Não é possível deletar todos os usuários enquanto existirem vendas cadastradas");
-    error.statusCode = 400;
-    throw error;
+  if (activeLoan) {
+    throw new Error("Usuário possui empréstimos ativos");
   }
 
-  return User.deleteMany();
+  user.ativo = false;
+  return user.save();
 };
 
 export default {
@@ -138,11 +74,5 @@ export default {
   getAllUsers,
   getUserById,
   updateUser,
-  deleteUser,
-  getUserByEmail,
-  countUsers,
-  updateUserName,
-  emailExists,
-  searchUsersByName,
-  deleteAllUsers,
+  deactivateUser,
 };
