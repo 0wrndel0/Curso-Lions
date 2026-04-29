@@ -1,80 +1,129 @@
-import User from "../models/User.js";
-import Loan from "../models/Loan.js";
+import loans from "../data/loans.js";
+import users from "../data/users.js";
+import books from "../data/books.js";
 
-// 1. Criar usuário
-const createUser = async (data) => {
-  const { nome, email } = data;
+let nextId = 1;
 
-  if (!nome || !email) {
-    throw new Error("Nome e email são obrigatórios");
-  }
+// 1. Criar empréstimo
+export function createLoan(req, res) {
+  const { userId, bookId, diasParaDevolucao } = req.body;
 
-  const emailExists = await User.findOne({ email });
-  if (emailExists) {
-    throw new Error("Email já cadastrado");
-  }
+  const user = users.find(u => u.id == userId);
+  if (!user) return res.status(404).json({ error: "Usuário não existe" });
+  if (!user.active) return res.status(400).json({ error: "Usuário inativo" });
 
-  return User.create({
-    nome,
-    email,
-    ativo: true,
-  });
-};
+  const book = books.find(b => b.id == bookId);
+  if (!book) return res.status(404).json({ error: "Livro não existe" });
+  if (!book.active) return res.status(400).json({ error: "Livro inativo" });
+  if (book.quantidadeDisponivel <= 0)
+    return res.status(400).json({ error: "Livro sem estoque" });
 
-// 2. Listar usuários
-const getAllUsers = async () => {
-  return User.find();
-};
+  const jaPegou = loans.find(
+    l => l.userId == userId && l.bookId == bookId && l.status === "ativo"
+  );
+  if (jaPegou)
+    return res.status(400).json({ error: "Usuário já pegou esse livro" });
+
+  book.quantidadeDisponivel--;
+
+  const hoje = new Date();
+  const dataPrevista = new Date();
+  dataPrevista.setDate(hoje.getDate() + diasParaDevolucao);
+
+  const loan = {
+    id: nextId++,
+    userId,
+    bookId,
+    dataEmprestimo: hoje,
+    dataPrevistaDevolucao: dataPrevista,
+    dataDevolucao: null,
+    status: "ativo",
+    multa: 0
+  };
+
+  loans.push(loan);
+  res.status(201).json(loan);
+}
+
+// 2. Listar todos
+export function getAllLoans(req, res) {
+  res.json(loans);
+}
 
 // 3. Buscar por ID
-const getUserById = async (id) => {
-  const user = await User.findById(id);
-  if (!user) throw new Error("Usuário não encontrado");
-  return user;
-};
+export function getLoanById(req, res) {
+  const loan = loans.find(l => l.id == req.params.id);
+  if (!loan) return res.status(404).json({ error: "Empréstimo não encontrado" });
+  res.json(loan);
+}
 
-// 4. Atualizar usuário
-const updateUser = async (id, data) => {
-  const user = await User.findById(id);
-  if (!user) throw new Error("Usuário não encontrado");
+// 4. Empréstimos por usuário
+export function getLoansByUser(req, res) {
+  const result = loans.filter(l => l.userId == req.params.userId);
+  res.json(result);
+}
 
-  if (data.email) {
-    const emailExists = await User.findOne({ email: data.email });
-    if (emailExists && emailExists._id.toString() !== id) {
-      throw new Error("Email já está em uso");
-    }
+// 5. Ativos
+export function getActiveLoans(req, res) {
+  res.json(loans.filter(l => l.status === "ativo"));
+}
+
+// 6. Devolver livro
+export function returnLoan(req, res) {
+  const loan = loans.find(l => l.id == req.params.id);
+  if (!loan) return res.status(404).json({ error: "Não encontrado" });
+  if (loan.status === "devolvido")
+    return res.status(400).json({ error: "Livro já devolvido" });
+
+  const book = books.find(b => b.id == loan.bookId);
+
+  const hoje = new Date();
+  loan.dataDevolucao = hoje;
+  loan.status = "devolvido";
+
+  book.quantidadeDisponivel++;
+
+  const atraso = Math.floor(
+    (hoje - new Date(loan.dataPrevistaDevolucao)) / (1000 * 60 * 60 * 24)
+  );
+
+  if (atraso > 0) {
+    loan.multa = atraso * 2;
   }
 
-  return User.findByIdAndUpdate(id, data, {
-    new: true,
-    runValidators: true,
-  });
-};
+  res.json(loan);
+}
 
-// 5. Desativar usuário
-const deactivateUser = async (id) => {
-  const user = await User.findById(id);
-  if (!user) throw new Error("Usuário não encontrado");
+// 7. Atrasados
+export function getOverdueLoans(req, res) {
+  const hoje = new Date();
 
-  const activeLoans = await Loan.findOne({
-    userId: id,
-    status: "ativo",
-  });
+  const atrasados = loans.filter(
+    l =>
+      l.status === "ativo" &&
+      new Date(l.dataPrevistaDevolucao) < hoje
+  );
 
-  if (activeLoans) {
-    throw new Error(
-      "Não é possível desativar usuário com empréstimos ativos"
-    );
+  res.json(atrasados);
+}
+
+// 8. Simular multa
+export function simulateFine(req, res) {
+  const loan = loans.find(l => l.id == req.params.id);
+  if (!loan) return res.status(404).json({ error: "Não encontrado" });
+
+  const hoje = new Date();
+
+  const atraso = Math.floor(
+    (hoje - new Date(loan.dataPrevistaDevolucao)) / (1000 * 60 * 60 * 24)
+  );
+
+  if (atraso <= 0) {
+    return res.json({ multa: 0 });
   }
 
-  user.ativo = false;
-  return user.save();
-};
-
-export default {
-  createUser,
-  getAllUsers,
-  getUserById,
-  updateUser,
-  deactivateUser,
-};
+  res.json({
+    diasAtraso: atraso,
+    multa: atraso * 2
+  });
+}
