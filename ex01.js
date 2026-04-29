@@ -1,67 +1,148 @@
-import express from "express";
-import loanService from "../services/loanService.js";
+import User from "../models/User.js";
+import Sale from "../models/Sale.js";
 
-const router = express.Router();
+const createUser = async (data) => {
+  const { nome, email, telefone, senha, idade } = data;
 
-// Criar empréstimo
-router.post("/", async (req, res) => {
-  try {
-    const loan = await loanService.createLoan(req.body);
-    res.status(201).json(loan);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
+  if (!nome || !email || !telefone || !senha || idade === undefined) {
+    const error = new Error("Nome, email, telefone, senha e idade são obrigatórios");
+    error.statusCode = 400;
+    throw error;
   }
-});
 
-// Listar todos
-router.get("/", async (req, res) => {
-  const loans = await loanService.getAllLoans();
-  res.json(loans);
-});
+  const userExists = await User.findOne({ email });
 
-// Rotas específicas antes do :id
-router.get("/user/:userId", async (req, res) => {
-  const loans = await loanService.getLoansByUser(req.params.userId);
-  res.json(loans);
-});
-
-router.get("/active", async (req, res) => {
-  const loans = await loanService.getActiveLoans();
-  res.json(loans);
-});
-
-router.get("/overdue", async (req, res) => {
-  const loans = await loanService.getOverdueLoans();
-  res.json(loans);
-});
-
-router.post("/:id/fine/simulate", async (req, res) => {
-  try {
-    const result = await loanService.simulateFine(req.params.id);
-    res.json(result);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
+  if (userExists) {
+    const error = new Error("Já existe um usuário com esse email");
+    error.statusCode = 400;
+    throw error;
   }
-});
 
-// Buscar por ID
-router.get("/:id", async (req, res) => {
-  try {
-    const loan = await loanService.getLoanById(req.params.id);
-    res.json(loan);
-  } catch (err) {
-    res.status(404).json({ error: err.message });
+  return User.create({ nome, email, telefone, senha, idade });
+};
+
+const getAllUsers = async () => {
+  return User.find();
+};
+
+const getUserById = async (id) => {
+  const user = await User.findById(id);
+
+  if (!user) {
+    const error = new Error("Usuário não encontrado");
+    error.statusCode = 404;
+    throw error;
   }
-});
 
-// Devolver
-router.patch("/:id/return", async (req, res) => {
-  try {
-    const loan = await loanService.returnBook(req.params.id);
-    res.json(loan);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
+  return user;
+};
+
+const updateUser = async (id, data) => {
+  const user = await User.findByIdAndUpdate(id, data, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!user) {
+    const error = new Error("Usuário não encontrado");
+    error.statusCode = 404;
+    throw error;
   }
-});
 
-export default router;
+  return user;
+};
+
+const deleteUser = async (id) => {
+  const salesCount = await Sale.countDocuments({ userId: id });
+
+  if (salesCount > 0) {
+    const error = new Error("Não é possível deletar um usuário que possui vendas cadastradas");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const user = await User.findByIdAndDelete(id);
+
+  if (!user) {
+    const error = new Error("Usuário não encontrado");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return user;
+};
+
+const getUserByEmail = async (email) => {
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    const error = new Error("Usuário não encontrado");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return user;
+};
+
+const countUsers = async () => {
+  return User.countDocuments();
+};
+
+const updateUserName = async (id, nome) => {
+  if (!nome) {
+    const error = new Error("O campo nome é obrigatório");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const user = await User.findByIdAndUpdate(
+    id,
+    { nome },
+    { new: true, runValidators: true }
+  );
+
+  if (!user) {
+    const error = new Error("Usuário não encontrado");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return user;
+};
+
+const emailExists = async (email) => {
+  const user = await User.findOne({ email });
+  return Boolean(user);
+};
+
+const searchUsersByName = async (name) => {
+  return User.find({
+    nome: { $regex: name, $options: "i" },
+  });
+};
+
+const deleteAllUsers = async () => {
+  const salesCount = await Sale.countDocuments();
+
+  if (salesCount > 0) {
+    const error = new Error("Não é possível deletar todos os usuários enquanto existirem vendas cadastradas");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return User.deleteMany();
+};
+
+export default {
+  createUser,
+  getAllUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
+  getUserByEmail,
+  countUsers,
+  updateUserName,
+  emailExists,
+  searchUsersByName,
+  deleteAllUsers,
+};
